@@ -110,6 +110,13 @@ st.markdown("""
         margin-bottom: 25px !important;
     }
     
+    /* 將上傳框標題字體顏色改為明亮淺灰色 */
+    div[data-testid="stFileUploader"] label p {
+        color: #f3f4f6 !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
+    }
+    
     div[data-testid="stFileUploader"]:hover {
         border-color: rgba(255, 255, 255, 0.2) !important;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
@@ -396,7 +403,7 @@ if pdf_file and excel_file:
                             """
                         
                         # 渲染和本地版一模一樣的 Glassmorphism 成果卡片
-                        st.markdown(f"""
+                        st.html(f"""
                             <div class="glass-panel">
                                 <div class="success-header">
                                     <div class="success-icon">
@@ -446,7 +453,7 @@ if pdf_file and excel_file:
                                     </div>
                                 </div>
                             </div>
-                        """, unsafe_allow_html=True)
+                        """)
                         
                         st.write("")
                         
