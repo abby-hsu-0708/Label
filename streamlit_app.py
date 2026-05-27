@@ -22,6 +22,13 @@ st.markdown("""
         font-family: 'Outfit', 'Noto Sans TC', sans-serif !important;
     }
     
+    /* 放大主容器寬度，讓左右欄的方塊拉寬變大 */
+    .block-container {
+        max-width: 950px !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+    
     /* 隱藏 Streamlit 預設的頁首與頁尾 */
     header { visibility: hidden !important; }
     footer { visibility: hidden !important; }
@@ -102,7 +109,7 @@ st.markdown("""
         background: #090d16 !important; /* 更深邃的背景色 */
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 24px !important;
-        padding: 40px !important; /* 增加 padding 使方塊看起來更大 */
+        padding: 30px 25px !important; /* 調整 padding 使上下高度更合適 */
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
         box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4) !important;
@@ -110,6 +117,17 @@ st.markdown("""
         margin-bottom: 25px !important;
         margin-left: 10px !important; /* 增加左右邊距，讓兩個方塊更隔開 */
         margin-right: 10px !important;
+        min-height: 290px !important; /* 強制設定卡片最低高度，確保左右大小完全一致 */
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+    }
+    
+    /* 強制將上傳框的 Label 容器設為固定高度，避免折行影響整體卡片高度 */
+    div[data-testid="stFileUploader"] label {
+        min-height: 55px !important;
+        display: inline-flex !important;
+        align-items: center !important;
     }
     
     /* 將上傳框標題字體顏色改為明亮淺灰色 */
@@ -117,6 +135,7 @@ st.markdown("""
         color: #f3f4f6 !important;
         font-weight: 600 !important;
         font-size: 1.05rem !important;
+        margin: 0 !important;
     }
     
     div[data-testid="stFileUploader"]:hover {
@@ -129,12 +148,23 @@ st.markdown("""
         background-color: #030712 !important; /* 更深更黑的 Dropzone 背景 */
         border: 1px dashed rgba(255, 255, 255, 0.2) !important;
         border-radius: 16px !important;
-        padding: 45px 20px !important; /* 增加 padding 使 Dropzone 顯得更大 */
+        height: 140px !important; /* 固定高度使其呈現標準長方形，解決肥矮胖正方形問題 */
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 15px !important;
     }
     
-    /* 確保 dropzone 內部的子 div 不會有預設的亮色背景 */
+    /* 確保 dropzone 內部的子 div 不會有預設的亮色背景，並完美居中 */
     div[data-testid="stFileUploaderDropzone"] > div {
         background-color: transparent !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        width: 100% !important;
     }
     
     div[data-testid="stFileUploaderDropzone"] h3, 
