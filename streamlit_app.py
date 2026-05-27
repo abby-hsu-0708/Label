@@ -144,19 +144,29 @@ st.markdown("""
 
     /* 針對 Streamlit 內置的 "Upload" / "Browse files" 按鈕 */
     div[data-testid="stFileUploaderDropzone"] button {
-        background-color: #1e293b !important; /* 深灰色按鈕背景 */
-        color: #ffffff !important; /* 純白字體 */
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        background-color: #f3f4f6 !important; /* 明亮按鈕背景 */
+        color: #111827 !important; /* 深色字體 */
+        border: 1px solid #d1d5db !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
         padding: 8px 16px !important;
         transition: all 0.2s ease !important;
     }
 
+    /* 強制按鈕內部的 text span 與 icon svg 顏色為深黑色 */
+    div[data-testid="stFileUploaderDropzone"] button span,
+    div[data-testid="stFileUploaderDropzone"] button p,
+    div[data-testid="stFileUploaderDropzone"] button div,
+    div[data-testid="stFileUploaderDropzone"] button svg,
+    div[data-testid="stFileUploaderDropzone"] button svg path {
+        color: #111827 !important;
+        fill: #111827 !important;
+        stroke: #111827 !important;
+    }
+
     div[data-testid="stFileUploaderDropzone"] button:hover {
-        background-color: #334155 !important;
-        border-color: rgba(255, 255, 255, 0.4) !important;
-        color: #ffffff !important;
+        background-color: #e5e7eb !important;
+        border-color: #9ca3af !important;
         transform: translateY(-1px) !important;
     }
     
@@ -386,9 +396,12 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# 4. 檔案上傳器 (Streamlit 原生組件，已透過 CSS 自動美化為玻璃卡片)
-pdf_file = st.file_uploader("1. 請上傳客戶 Label PDF 檔案", type=["pdf"])
-excel_file = st.file_uploader("2. 請上傳倉庫 Packing List Excel 檔案", type=["xls", "xlsx"])
+# 4. 檔案上傳器 (左右排列分布)
+col1, col2 = st.columns(2)
+with col1:
+    pdf_file = st.file_uploader("1. 請上傳客戶 Label PDF 檔案", type=["pdf"])
+with col2:
+    excel_file = st.file_uploader("2. 請上傳倉庫 Packing List Excel 檔案", type=["xls", "xlsx"])
 
 # 5. 開始標示按鈕
 if pdf_file and excel_file:
