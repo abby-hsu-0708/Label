@@ -124,21 +124,52 @@ st.markdown("""
 
     /* 上傳框內部字體顏色與圖示微調 */
     div[data-testid="stFileUploaderDropzone"] {
-        background: rgba(0, 0, 0, 0.2) !important;
-        border: 1px dashed rgba(255, 255, 255, 0.15) !important;
+        background-color: #0f172a !important; /* 深暗色背景 */
+        border: 1px dashed rgba(255, 255, 255, 0.2) !important;
         border-radius: 16px !important;
+    }
+    
+    /* 確保 dropzone 內部的子 div 不會有預設的亮色背景 */
+    div[data-testid="stFileUploaderDropzone"] > div {
+        background-color: transparent !important;
     }
     
     div[data-testid="stFileUploaderDropzone"] h3, 
     div[data-testid="stFileUploaderDropzone"] span, 
-    div[data-testid="stFileUploaderDropzone"] small {
-        color: #9ca3af !important;
+    div[data-testid="stFileUploaderDropzone"] small,
+    div[data-testid="stFileUploaderDropzone"] p {
+        color: #e2e8f0 !important; /* 明亮的白灰色 */
+        font-weight: 500 !important;
+    }
+
+    /* 針對 Streamlit 內置的 "Upload" / "Browse files" 按鈕 */
+    div[data-testid="stFileUploaderDropzone"] button {
+        background-color: #1e293b !important; /* 深灰色按鈕背景 */
+        color: #ffffff !important; /* 純白字體 */
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 8px 16px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div[data-testid="stFileUploaderDropzone"] button:hover {
+        background-color: #334155 !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+        color: #ffffff !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    div[data-testid="stFileUploaderDropzone"] button:active {
+        transform: translateY(0px) !important;
     }
     
     /* 覆寫 Streamlit 按鈕，將其改造為帶有發光漸層的奢華按鈕 */
-    div.stButton > button {
+    div.stButton > button,
+    div[data-testid="stDownloadButton"] button,
+    div[data-testid="stDownloadButton"] > button {
         background: linear-gradient(135deg, #8b5cf6, #3b82f6) !important;
-        color: white !important;
+        color: #ffffff !important;
         border: none !important;
         padding: 14px 28px !important;
         font-size: 1.05rem !important;
@@ -148,15 +179,25 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         box-shadow: 0 8px 20px rgba(139, 92, 246, 0.25) !important;
         margin-top: 10px !important;
+        text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
     
-    div.stButton > button:hover {
+    div.stButton > button:hover,
+    div[data-testid="stDownloadButton"] button:hover,
+    div[data-testid="stDownloadButton"] > button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 12px 25px rgba(139, 92, 246, 0.45) !important;
         border: none !important;
+        color: #ffffff !important;
+        background: linear-gradient(135deg, #9d76fa, #4f94fd) !important;
     }
     
-    div.stButton > button:active {
+    div.stButton > button:active,
+    div[data-testid="stDownloadButton"] button:active,
+    div[data-testid="stDownloadButton"] > button:active {
         transform: translateY(1px) !important;
     }
 
