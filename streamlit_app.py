@@ -109,18 +109,26 @@ st.markdown("""
         background: #090d16 !important; /* 更深邃的背景色 */
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 24px !important;
-        padding: 30px 25px !important; /* 調整 padding 使上下高度更合適 */
+        padding: 30px 25px !important;
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
         box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4) !important;
         transition: all 0.3s ease !important;
         margin-bottom: 25px !important;
-        margin-left: 10px !important; /* 增加左右邊距，讓兩個方塊更隔開 */
+        margin-left: 10px !important;
         margin-right: 10px !important;
-        min-height: 290px !important; /* 強制設定卡片最低高度，確保左右大小完全一致 */
+        min-height: 320px !important; /* 配合大 Dropzone 調高至 320px，確保左右完全一致 */
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
+    }
+    
+    /* 確保 Uploader 卡片內部的所有包裝層寬度 100%，以利內部白方塊寬度拉滿 */
+    div[data-testid="stFileUploader"] > div,
+    div[data-testid="stFileUploader"] > div > div,
+    div[data-testid="stFileUploader"] > div > div > div {
+        width: 100% !important;
+        max-width: 100% !important;
     }
     
     /* 強制將上傳框的 Label 容器設為固定高度，避免折行影響整體卡片高度 */
@@ -143,17 +151,19 @@ st.markdown("""
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 上傳框內部字體顏色與圖示微調 */
+    /* 上傳框內部字體顏色與圖示微調 - 改為更大寬度拉滿的白底長方形 */
     div[data-testid="stFileUploaderDropzone"] {
-        background-color: #030712 !important; /* 更深更黑的 Dropzone 背景 */
-        border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+        background-color: #f8fafc !important; /* 高質感白底方塊 */
+        border: 1px dashed #cbd5e1 !important;
         border-radius: 16px !important;
-        height: 140px !important; /* 固定高度使其呈現標準長方形，解決肥矮胖正方形問題 */
+        height: 170px !important; /* 增加高度至 170px 使方塊更大 */
+        width: 100% !important; /* 寬度拉滿 */
+        max-width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: center !important;
         align-items: center !important;
-        padding: 15px !important;
+        padding: 20px !important;
     }
     
     /* 確保 dropzone 內部的子 div 不會有預設的亮色背景，並完美居中 */
@@ -171,8 +181,8 @@ st.markdown("""
     div[data-testid="stFileUploaderDropzone"] span, 
     div[data-testid="stFileUploaderDropzone"] small,
     div[data-testid="stFileUploaderDropzone"] p {
-        color: #e2e8f0 !important; /* 明亮的白灰色 */
-        font-weight: 500 !important;
+        color: #334155 !important; /* 高對比深灰色，適配白底方塊 */
+        font-weight: 600 !important;
     }
 
     /* 針對 Streamlit 內置的 "Upload" / "Browse files" 按鈕 */
