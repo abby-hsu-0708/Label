@@ -99,15 +99,17 @@ st.markdown("""
 
     /* 覆寫 Streamlit 原生上傳區域，使其變身為玻璃擬物化卡片 */
     div[data-testid="stFileUploader"] {
-        background: rgba(17, 24, 39, 0.65) !important;
+        background: #090d16 !important; /* 更深邃的背景色 */
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 24px !important;
-        padding: 25px !important;
+        padding: 40px !important; /* 增加 padding 使方塊看起來更大 */
         backdrop-filter: blur(20px) !important;
         -webkit-backdrop-filter: blur(20px) !important;
-        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3) !important;
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4) !important;
         transition: all 0.3s ease !important;
         margin-bottom: 25px !important;
+        margin-left: 10px !important; /* 增加左右邊距，讓兩個方塊更隔開 */
+        margin-right: 10px !important;
     }
     
     /* 將上傳框標題字體顏色改為明亮淺灰色 */
@@ -119,14 +121,15 @@ st.markdown("""
     
     div[data-testid="stFileUploader"]:hover {
         border-color: rgba(255, 255, 255, 0.2) !important;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4) !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
     }
 
     /* 上傳框內部字體顏色與圖示微調 */
     div[data-testid="stFileUploaderDropzone"] {
-        background-color: #0f172a !important; /* 深暗色背景 */
+        background-color: #030712 !important; /* 更深更黑的 Dropzone 背景 */
         border: 1px dashed rgba(255, 255, 255, 0.2) !important;
         border-radius: 16px !important;
+        padding: 45px 20px !important; /* 增加 padding 使 Dropzone 顯得更大 */
     }
     
     /* 確保 dropzone 內部的子 div 不會有預設的亮色背景 */
@@ -143,34 +146,36 @@ st.markdown("""
     }
 
     /* 針對 Streamlit 內置的 "Upload" / "Browse files" 按鈕 */
-    div[data-testid="stFileUploaderDropzone"] button {
-        background-color: #f3f4f6 !important; /* 明亮按鈕背景 */
-        color: #111827 !important; /* 深色字體 */
-        border: 1px solid #d1d5db !important;
+    div[data-testid="stFileUploaderDropzone"] button,
+    div[data-testid="stFileUploader"] button,
+    .stFileUploader button {
+        background-color: #000000 !important; /* 直接改為純黑色背景 */
+        color: #ffffff !important; /* 白色字體 */
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        padding: 8px 16px !important;
+        padding: 10px 20px !important;
         transition: all 0.2s ease !important;
     }
 
-    /* 強制按鈕內部的 text span 與 icon svg 顏色為深黑色 */
-    div[data-testid="stFileUploaderDropzone"] button span,
-    div[data-testid="stFileUploaderDropzone"] button p,
-    div[data-testid="stFileUploaderDropzone"] button div,
-    div[data-testid="stFileUploaderDropzone"] button svg,
-    div[data-testid="stFileUploaderDropzone"] button svg path {
-        color: #111827 !important;
-        fill: #111827 !important;
-        stroke: #111827 !important;
+    /* 強制按鈕內部的 text span 與 icon svg 顏色為純白色 */
+    div[data-testid="stFileUploaderDropzone"] button *,
+    div[data-testid="stFileUploader"] button *,
+    .stFileUploader button * {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
     }
 
-    div[data-testid="stFileUploaderDropzone"] button:hover {
-        background-color: #e5e7eb !important;
-        border-color: #9ca3af !important;
+    div[data-testid="stFileUploaderDropzone"] button:hover,
+    div[data-testid="stFileUploader"] button:hover {
+        background-color: #1f2937 !important; /* hover 時稍微變淺一點的黑灰色 */
+        border-color: rgba(255, 255, 255, 0.5) !important;
         transform: translateY(-1px) !important;
     }
     
-    div[data-testid="stFileUploaderDropzone"] button:active {
+    div[data-testid="stFileUploaderDropzone"] button:active,
+    div[data-testid="stFileUploader"] button:active {
         transform: translateY(0px) !important;
     }
     
@@ -397,7 +402,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 4. 檔案上傳器 (左右排列分布)
-col1, col2 = st.columns(2)
+col1, col2 = st.columns(2, gap="large")
 with col1:
     pdf_file = st.file_uploader("1. 請上傳客戶 Label PDF 檔案", type=["pdf"])
 with col2:
