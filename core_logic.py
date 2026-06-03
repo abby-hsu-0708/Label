@@ -184,8 +184,8 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                         if idx < len(boxes):
                             box_info = boxes[idx]
                             
-                            # 確定繪製的座標：箱號與數量對齊右上角 MiSUMi logo 下方 (Logo 起點約為 236.7 / 481.5)
-                            x_aa = 236.0 if col == 0 else 481.0
+                            # 確定繪製的座標：箱號與數量對齊下方 QTY: 起點 (QTY: 起點約為 205.7 / 450.5)
+                            x_aa = 205.0 if col == 0 else 450.0
                             x_pcs = x_aa
                             x_p = 67.3 if col == 0 else 312.1
                             
