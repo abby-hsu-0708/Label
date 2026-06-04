@@ -441,6 +441,55 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+# 3.5 步驟 0：快速預覽各 PO 標籤需求數量 (選填)
+with st.expander("📋 步驟 0：[選填] 先上傳 Packing List 預覽各 PO 標籤需求量", expanded=False):
+    st.markdown("""
+        <p style="color: #9ca3af; font-size: 0.92rem; margin-bottom: 15px;">
+            在前往客戶網站下載 PDF 標籤前，您可以先在此上傳倉庫的 Packing List Excel，系統會立即為您統計每個 PO 各自所需的標籤數量（箱數），方便您直接對照下載！
+        </p>
+    """, unsafe_allow_html=True)
+    
+    preview_excel_file = st.file_uploader("請上傳 Packing List Excel 檔案以計算標籤量", type=["xls", "xlsx"], key="preview_uploader")
+    
+    if preview_excel_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xls") as tmp_preview_excel:
+            tmp_preview_excel.write(preview_excel_file.read())
+            tmp_preview_excel_path = tmp_preview_excel.name
+            
+        try:
+            with st.spinner("正在計算中..."):
+                excel_data = parse_excel(tmp_preview_excel_path)
+                if not excel_data:
+                    st.error("❌ Excel 檔案中未解析出任何有效的裝箱數據，請確認格式。")
+                else:
+                    po_rows = []
+                    for po, boxes in excel_data.items():
+                        # 格式化 PO 號碼以利閱讀，如 53-260201-049789
+                        formatted_po = po
+                        if len(po) == 14 and po.startswith("53"):
+                            formatted_po = f"{po[0:2]}-{po[2:8]}-{po[8:14]}"
+                        po_rows.append({
+                            "PO 號碼": formatted_po,
+                            "需要標籤數量 (總箱數)": len(boxes),
+                            "總出貨件數 (pcs)": sum(box["qty"] for box in boxes)
+                        })
+                    
+                    df_preview = pd.DataFrame(po_rows)
+                    df_preview = df_preview.sort_values(by="PO 號碼")
+                    
+                    st.markdown("##### 📊 各 PO 標籤需求統計表")
+                    st.dataframe(
+                        df_preview,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    st.success("💡 提示：您可以點擊表格欄位進行排序，或點擊表格右上角下載為 CSV 檔。")
+        except Exception as e:
+            st.error(f"❌ 解析 Excel 發生錯誤: {e}")
+        finally:
+            if os.path.exists(tmp_preview_excel_path):
+                os.unlink(tmp_preview_excel_path)
+
 # 4. 檔案上傳器 (左右排列分布)
 col1, col2 = st.columns(2, gap="large")
 with col1:
