@@ -225,11 +225,13 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                     # 該標籤格為空白標籤，跳過不處理
                     pass
                     
+    missing_labels = 0
     # 檢查是否所有 Excel 中的箱子都被標示了
     for po, boxes in excel_data.items():
         used = po_counters[po]
         total = len(boxes)
         if used < total:
+            missing_labels += (total - used)
             warnings.append(f"警告: Excel 中 PO {po} 共有 {total} 箱，但 PDF 標籤中僅標示了 {used} 箱，有 {total - used} 箱未匹配。")
             
     total_pages = len(doc)
@@ -243,6 +245,7 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
         "total_pages": total_pages,
         "matched_count": matched_count,
         "unmatched_labels": unmatched_labels,
+        "missing_labels": missing_labels,
         "warnings": warnings[:15]  # 最多回傳前 15 個警告資訊，避免過長
     }
     

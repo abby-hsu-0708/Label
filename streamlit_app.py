@@ -305,7 +305,7 @@ st.markdown("""
     /* 數據統計 Grid */
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 15px;
         margin-bottom: 25px;
     }
@@ -525,8 +525,12 @@ if pdf_file and excel_file:
                                         <span class="stat-label">成功匹配標籤</span>
                                         <span class="stat-value">{stats['matched_count']} 個</span>
                                     </div>
+                                    <div class="stat-card {'warning' if stats['missing_labels'] > 0 else ''}">
+                                        <span class="stat-label">缺少標籤 (Excel剩餘)</span>
+                                        <span class="stat-value">{stats['missing_labels']} 個</span>
+                                    </div>
                                     <div class="stat-card {'warning' if stats['unmatched_labels'] > 0 else ''}">
-                                        <span class="stat-label">未匹配標籤</span>
+                                        <span class="stat-label">多餘標籤 (PDF多出)</span>
                                         <span class="stat-value">{stats['unmatched_labels']} 個</span>
                                     </div>
                                 </div>
