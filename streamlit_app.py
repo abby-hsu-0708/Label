@@ -492,11 +492,11 @@ if pdf_file and excel_file:
                         
                         # 準備警示訊息 HTML
                         warning_html = ""
-                        if stats["warnings"]:
-                            items = "".join([f"<li>{w}</li>" for w in stats["warnings"]])
+                        if stats.get("warnings"):
+                            items = "".join([f"<li>{w}</li>" for w in stats.get("warnings", [])])
                             warning_html = f"""
                             <div class="warning-box">
-                                <div class="warning-title">⚠️ 配對警示訊息 ({len(stats['warnings'])} 條)</div>
+                                <div class="warning-title">⚠️ 配對警示訊息 ({len(stats.get('warnings', []))} 條)</div>
                                 <ul class="warning-list">{items}</ul>
                             </div>
                             """
@@ -519,19 +519,19 @@ if pdf_file and excel_file:
                                 <div class="stats-grid">
                                     <div class="stat-card">
                                         <span class="stat-label">PDF 總頁數</span>
-                                        <span class="stat-value">{stats['total_pages']} 頁</span>
+                                        <span class="stat-value">{stats.get('total_pages', 0)} 頁</span>
                                     </div>
                                     <div class="stat-card highlight">
                                         <span class="stat-label">成功匹配標籤</span>
-                                        <span class="stat-value">{stats['matched_count']} 個</span>
+                                        <span class="stat-value">{stats.get('matched_count', 0)} 個</span>
                                     </div>
-                                    <div class="stat-card {'warning' if stats['missing_labels'] > 0 else ''}">
+                                    <div class="stat-card {'warning' if stats.get('missing_labels', 0) > 0 else ''}">
                                         <span class="stat-label">缺少標籤 (Excel剩餘)</span>
-                                        <span class="stat-value">{stats['missing_labels']} 個</span>
+                                        <span class="stat-value">{stats.get('missing_labels', 0)} 個</span>
                                     </div>
-                                    <div class="stat-card {'warning' if stats['unmatched_labels'] > 0 else ''}">
+                                    <div class="stat-card {'warning' if stats.get('unmatched_labels', 0) > 0 else ''}">
                                         <span class="stat-label">多餘標籤 (PDF多出)</span>
-                                        <span class="stat-value">{stats['unmatched_labels']} 個</span>
+                                        <span class="stat-value">{stats.get('unmatched_labels', 0)} 個</span>
                                     </div>
                                 </div>
                                 
