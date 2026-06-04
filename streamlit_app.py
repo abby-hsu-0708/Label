@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 import tempfile
 import base64
 import re
+import pandas as pd
 from core_logic import parse_excel, label_pdf
 
 # 1. 設置頁面配置
