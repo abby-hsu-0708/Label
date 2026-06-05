@@ -18,9 +18,49 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
     
     .stApp {
-        background-color: #080b11 !important;
+        background-color: #121826 !important;
         color: #f3f4f6 !important;
         font-family: 'Outfit', 'Noto Sans TC', sans-serif !important;
+    }
+    
+    /* 調整 st.expander 樣式，防止背景在點擊或某些狀態下變白 */
+    div[data-testid="stExpander"] {
+        background: rgba(17, 24, 39, 0.45) !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 16px !important;
+        overflow: hidden !important;
+    }
+    
+    div[data-testid="stExpander"] > details {
+        border: none !important;
+        background: transparent !important;
+    }
+    
+    div[data-testid="stExpander"] > details > summary {
+        background-color: rgba(17, 24, 39, 0.7) !important;
+        color: #f3f4f6 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+        padding: 12px 16px !important;
+        transition: background-color 0.2s ease, color 0.2s ease !important;
+    }
+    
+    div[data-testid="stExpander"] > details > summary:hover {
+        background-color: rgba(17, 24, 39, 0.9) !important;
+        color: #ffffff !important;
+    }
+    
+    div[data-testid="stExpander"] > details > summary:focus,
+    div[data-testid="stExpander"] > details > summary:active,
+    div[data-testid="stExpander"] > details[open] > summary {
+        background-color: rgba(17, 24, 39, 0.8) !important;
+        color: #ffffff !important;
+    }
+    
+    div[data-testid="stExpander"] > details > summary * {
+        color: #f3f4f6 !important;
+    }
+    div[data-testid="stExpander"] > details > summary:hover * {
+        color: #ffffff !important;
     }
     
     /* 放大主容器寬度，讓左右欄的方塊拉寬變大 */
