@@ -55,6 +55,14 @@ def parse_excel(excel_path):
             po_clean = po_val.replace("-", "")
             qty = int(qty_match.group(1))
             
+            # 取得下一行的欄位值，作為 description
+            description = ""
+            if idx + 1 < len(df):
+                next_row = df.iloc[idx + 1]
+                next_row_vals = [str(val).strip() if pd.notna(val) else "" for val in next_row.values]
+                if len(next_row_vals) > 1:
+                    description = next_row_vals[1]
+            
             # 解析箱號範圍
             prefix1 = ctn_match.group(1)
             start_num = int(ctn_match.group(2))
@@ -70,7 +78,9 @@ def parse_excel(excel_path):
                     "po": po_clean,
                     "qty": qty,
                     "prefix": prefix1,
-                    "num": num
+                    "num": num,
+                    "product_no": part_val,
+                    "description": description
                 })
                 
     # 根據 PO 進行分組
@@ -111,7 +121,9 @@ def parse_excel(excel_path):
                 "qty": box["qty"],
                 "display_box": display_box,
                 "display_qty": display_qty,
-                "seq_str": seq_str
+                "seq_str": seq_str,
+                "product_no": box.get("product_no", ""),
+                "description": box.get("description", "")
             })
             
         processed_data[po] = po_boxes_info

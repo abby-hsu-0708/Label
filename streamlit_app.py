@@ -469,8 +469,18 @@ with st.expander("📋 步驟 0：[選填] 先上傳 Packing List 預覽各 PO �
                         formatted_po = po
                         if len(po) == 14 and po.startswith("53"):
                             formatted_po = f"{po[0:2]}-{po[2:8]}-{po[8:14]}"
+                        
+                        # 收集所有的 product_no 與 description
+                        product_nos = sorted(list(set(box.get("product_no", "") for box in boxes if box.get("product_no"))))
+                        descriptions = sorted(list(set(box.get("description", "") for box in boxes if box.get("description"))))
+                        
+                        prod_no_str = ", ".join(product_nos)
+                        desc_str = ", ".join(descriptions)
+
                         po_rows.append({
                             "PO 號碼": formatted_po,
+                            "Product NO": prod_no_str,
+                            "Description": desc_str,
                             "需要標籤數量 (總箱數)": len(boxes),
                             "總出貨件數 (pcs)": sum(box["qty"] for box in boxes)
                         })
