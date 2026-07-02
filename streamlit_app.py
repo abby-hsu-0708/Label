@@ -5,13 +5,13 @@ import tempfile
 import base64
 import re
 import pandas as pd
-from core_logic import parse_excel, label_pdf
+from core_logic import parse_excel, label_pdf, find_delivery_date, calculate_date_range
+
 
 # 1. 設置頁面配置
 st.set_page_config(page_title="MISUMI 標籤自動標示工具", layout="centered", page_icon="🏷️")
 
 # 2. 注入奢華的極光與玻璃擬物化 (Glassmorphism) 全域 CSS
-# 這會徹底覆寫 Streamlit 的原生樣式，將其改裝為跟本地版一模一樣的精美介面
 st.markdown("""
     <style>
     /* 全域字型與背景 */
@@ -158,7 +158,7 @@ st.markdown("""
         margin-bottom: 25px !important;
         margin-left: 10px !important;
         margin-right: 10px !important;
-        min-height: 320px !important; /* 配合大 Dropzone 調高至 320px，確保左右完全一致 */
+        min-height: 320px !important;
         display: flex !important;
         flex-direction: column !important;
         justify-content: space-between !important;
@@ -197,8 +197,8 @@ st.markdown("""
         background-color: #f8fafc !important; /* 高質感白底方塊 */
         border: 1px dashed #cbd5e1 !important;
         border-radius: 16px !important;
-        height: 170px !important; /* 增加高度至 170px 使方塊更大 */
-        width: 100% !important; /* 寬度拉滿 */
+        height: 170px !important;
+        width: 100% !important;
         max-width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
@@ -222,7 +222,7 @@ st.markdown("""
     div[data-testid="stFileUploaderDropzone"] span, 
     div[data-testid="stFileUploaderDropzone"] small,
     div[data-testid="stFileUploaderDropzone"] p {
-        color: #334155 !important; /* 高對比深灰色，適配白底方塊 */
+        color: #334155 !important;
         font-weight: 600 !important;
     }
 
@@ -230,8 +230,8 @@ st.markdown("""
     div[data-testid="stFileUploaderDropzone"] button,
     div[data-testid="stFileUploader"] button,
     .stFileUploader button {
-        background-color: #000000 !important; /* 直接改為純黑色背景 */
-        color: #ffffff !important; /* 白色字體 */
+        background-color: #000000 !important;
+        color: #ffffff !important;
         border: 1px solid rgba(255, 255, 255, 0.3) !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
@@ -250,7 +250,7 @@ st.markdown("""
 
     div[data-testid="stFileUploaderDropzone"] button:hover,
     div[data-testid="stFileUploader"] button:hover {
-        background-color: #1f2937 !important; /* hover 時稍微變淺一點的黑灰色 */
+        background-color: #1f2937 !important;
         border-color: rgba(255, 255, 255, 0.5) !important;
         transform: translateY(-1px) !important;
     }
@@ -478,11 +478,14 @@ st.markdown("""
             <span class="custom-badge">PRO</span>
             <h1>MISUMI 標籤自動標示系統</h1>
         </div>
-        <p class="custom-subtitle">只需上傳原始標籤 PDF 與倉庫 Packing List，即可在幾秒鐘內精確套印箱號與數量。</p>
     </div>
 """, unsafe_allow_html=True)
 
-# 3.5 步驟 0：快速預覽各 PO 標籤需求數量 (選填)
+with st.sidebar:
+    st.markdown("### ⚙️ 系統設定參數")
+    st.info("💡 請於主介面上傳對應的 Label PDF 與 Packing List Excel 檔案以執行標記對應。")
+
+# 4. 步驟 0：快速預覽各 PO 標籤需求數量 (選填)
 with st.expander("📋 步驟 0：[選填] 先上傳 Packing List 預覽各 PO 標籤需求量", expanded=False):
     st.markdown("""
         <p style="color: #9ca3af; font-size: 0.92rem; margin-bottom: 15px;">
@@ -541,14 +544,14 @@ with st.expander("📋 步驟 0：[選填] 先上傳 Packing List 預覽各 PO �
             if os.path.exists(tmp_preview_excel_path):
                 os.unlink(tmp_preview_excel_path)
 
-# 4. 檔案上傳器 (左右排列分布)
+# 5. 檔案上傳器 (左右排列分布)
 col1, col2 = st.columns(2, gap="large")
 with col1:
     pdf_file = st.file_uploader("1. 請上傳客戶 Label PDF 檔案", type=["pdf"])
 with col2:
     excel_file = st.file_uploader("2. 請上傳倉庫 Packing List Excel 檔案", type=["xls", "xlsx"])
 
-# 5. 開始標示按鈕
+# 6. 開始標示按鈕
 if pdf_file and excel_file:
     st.write("")
     if st.button("🚀 開始自動對應並標示", use_container_width=True):
@@ -601,7 +604,7 @@ if pdf_file and excel_file:
                             </div>
                             """
                         
-                        # 渲染和本地版一模一樣的 Glassmorphism 成果卡片
+                        # 渲染成果卡片
                         st.html(f"""
                             <div class="glass-panel">
                                 <div class="success-header">
