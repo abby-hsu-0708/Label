@@ -27,8 +27,8 @@ def parse_excel(excel_path):
     # 箱號 Regex：例如 AA0001 或 AA0001 - AA0002
     box_pattern = re.compile(r"^([A-Z]+)(\d+)(?:\s*-\s*([A-Z]+)(\d+))?\s*$")
     
-    # PO Regex：14 位純數字，或含有連字號 (e.g. 53-260201-049789)
-    po_pattern = re.compile(r"^53-?\d{6}-?\d{6}$")
+    # PO Regex：14 位純數字，或含有連字號 (e.g. 53-260201-049789)，以及 5P 開頭的 12 位英數字 (e.g. 5P-002A8J-000208)
+    po_pattern = re.compile(r"^(?:53-?\d{6}-?\d{6}|5[Pp]-?[A-Za-z0-9]{6}-?[A-Za-z0-9]{6})$")
     
     # 數量 Regex：例如 @30pcs 或 @20pcs
     qty_pattern = re.compile(r"@(\d+)pcs")
@@ -183,8 +183,8 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                 # 提取此極窄區域內的文字以識別 PO 號碼
                 text = page.get_text("text", clip=po_rect)
                 
-                # 搜尋 PO 號碼格式：53-260201-049789 或 53260201049789
-                po_match = re.search(r"53-?\d{6}-?\d{6}", text)
+                # 搜尋 PO 號碼格式：53-260201-049789 或 53260201049789，以及 5P 開頭格式
+                po_match = re.search(r"(?:53-?\d{6}-?\d{6})|(?:5[Pp]-?[A-Za-z0-9]{6}-?[A-Za-z0-9]{6})", text)
                 
                 if po_match:
                     po_clean = po_match.group(0).replace("-", "")
@@ -262,3 +262,80 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
     }
     
     return True, "成功標示 PDF 標籤！", stats
+
+def find_delivery_date(excel_path):
+    """
+    從 Packing List Excel 中讀取出貨日期 (Delivery Date)。
+    """
+    try:
+        # 強制用 str 讀取，避免日期格式異常
+        df = pd.read_excel(excel_path, header=None, dtype=str)
+        # 遍歷前 20 行與前 5 欄尋找關鍵字
+        for r_idx in range(min(20, len(df))):
+            for c_idx in range(min(5, len(df.columns))):
+                val = str(df.iloc[r_idx, c_idx]).strip()
+                if "Delivery Date" in val:
+                    # 嘗試取得其右側單元格
+                    for offset in [1, 2]:
+                        if c_idx + offset < len(df.columns):
+                            date_str = str(df.iloc[r_idx, c_idx + offset]).strip()
+                            if date_str and date_str.lower() != "nan":
+                                # 使用 pandas.to_datetime 進行強健的日期格式轉換
+                                dt = pd.to_datetime(date_str, errors='coerce')
+                                if not pd.isna(dt):
+                                    return dt
+    except Exception as e:
+        print(f"讀取出貨日期時發生錯誤: {e}")
+    return None
+
+def is_taiwan_holiday(date_obj):
+    """
+    判斷指定日期是否為台灣國定假日。
+    包含 2026 年與 2027 年主要可能落在週四的假日。
+    """
+    holidays = {
+        # 2026
+        "2026-01-01", # 元旦 (週四)
+        "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", # 春節 (2/19 週四)
+        "2026-02-27", "2026-02-28", # 228
+        "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", # 清明/兒童節 (4/2 週四)
+        "2026-06-19", # 端午節 (週五)
+        "2026-09-25", # 中秋節 (週五)
+        "2026-10-09", "2026-10-10", # 國慶日
+        
+        # 2027
+        "2027-01-01", # 元旦
+        "2027-02-05", "2027-02-06", "2027-02-07", "2027-02-08", "2027-02-09", "2027-02-10", "2027-02-11", "2027-02-12", # 春節 (2/11 週四)
+        "2027-02-28", # 228
+        "2027-04-02", "2027-04-03", "2027-04-04", "2027-04-05", # 清明/兒童節
+        "2027-06-09", # 端午節 (週三)
+        "2027-09-15", # 中秋節 (週三)
+        "2027-10-08", "2027-10-10" # 國慶日
+    }
+    date_str = date_obj.strftime("%Y-%m-%d")
+    return date_str in holidays
+
+def calculate_date_range(start_date):
+    """
+    根據出貨日計算篩選日期區間。
+    開始日期 = 出貨日
+    結束日期 = 下週四 (若遇台灣國定假日則改為週三)
+    """
+    from datetime import timedelta
+    if not start_date:
+        return None, None
+    
+    # 計算下週四：(10 - 星期幾) % 7 如果為 0 則代表下週四
+    # 星期一=0, 星期二=1, ..., 星期日=6
+    # 我們使用公式： D + timedelta(days = 10 - D.weekday())
+    # 這樣一律可以找到 start_date 所在日曆週下星期的星期四
+    days_to_thursday = 10 - start_date.weekday()
+    next_thursday = start_date + timedelta(days=days_to_thursday)
+    
+    # 檢查是否為台灣假日，若是則改為週三 (前移 1 天)
+    if is_taiwan_holiday(next_thursday):
+        end_date = next_thursday - timedelta(days=1)
+    else:
+        end_date = next_thursday
+        
+    return start_date, end_date
