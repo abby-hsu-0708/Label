@@ -196,8 +196,12 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                         if idx < len(boxes):
                             box_info = boxes[idx]
                             
-                            # 確定繪製的座標：箱號與數量對齊下方 QTY: 起點 (QTY: 起點約為 205.7 / 450.5)
-                            x_aa = 205.0 if col == 0 else 450.0
+                            # 確定繪製的座標：箱號與數量對齊下方 QTY: 起點 (53 開頭為 205.0 / 450.0)
+                            # 若為 5P 開頭的 PO，為了避開中間小字並對齊下方的 2026 年份，將 X 座標平移 (左欄 260.0，右欄 510.0)
+                            if po_clean.startswith("5P") or po_clean.startswith("5p"):
+                                x_aa = 260.0 if col == 0 else 510.0
+                            else:
+                                x_aa = 205.0 if col == 0 else 450.0
                             x_pcs = x_aa
                             x_p = 67.3 if col == 0 else 312.1
                             
