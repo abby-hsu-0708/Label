@@ -196,35 +196,44 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                         if idx < len(boxes):
                             box_info = boxes[idx]
                             
-                            # 確定繪製的座標：箱號與數量對齊下方 QTY: 起點 (205.0 / 450.0)
-                            x_aa = 205.0 if col == 0 else 450.0
-                            x_pcs = x_aa
-                            x_p = 67.3 if col == 0 else 312.1
-                            
-                            # 若為 5P 開頭的 PO，為了避開中間小字 (如 AB251CDB25) 且防止水平壓到右欄標籤，將 Y 座標垂直下移 24.0pt
+                            # 若為 5P 開頭的 PO，為了避開中間小字與下方 QTY 數量，
+                            # 將 X 座標平移 (左欄 175.0, 右欄 420.0)，且 Y 座標下移 20.0pt，並將箱號與數量合併為單行印出
                             is_5p = po_clean.startswith("5P") or po_clean.startswith("5p")
-                            y_aa = Y_AA[row] + 24.0 if is_5p else Y_AA[row]
-                            y_pcs = Y_PCS[row] + 24.0 if is_5p else Y_PCS[row]
+                            if is_5p:
+                                x_aa = 175.0 if col == 0 else 420.0
+                                y_aa = Y_AA[row] + 20.0
+                            else:
+                                x_aa = 205.0 if col == 0 else 450.0
+                                y_aa = Y_AA[row]
+                            x_pcs = x_aa
+                            y_pcs = Y_PCS[row]
+                            x_p = 67.3 if col == 0 else 312.1
                             y_p = Y_P[row]
                             
                             # 1. 繪製箱號文字 (AA 或完整箱號如 AC0134)
-                            # 使用 Helvetica-Bold 字型，大小約 14pt (與原版完美契合)
+                            # 若為 5P 標籤，則將箱號與數量合併在同一行印出，防止重疊壓到下方 QTY
+                            if is_5p:
+                                text_to_draw = f"{box_info['display_box']}  {box_info['display_qty']}"
+                            else:
+                                text_to_draw = box_info["display_box"]
+                                
                             page.insert_text(
                                 fitz.Point(x_aa, y_aa + 12),
-                                box_info["display_box"],
+                                text_to_draw,
                                 fontsize=14,
                                 fontname="hebo",
                                 color=(0, 0, 0)
                             )
                             
-                            # 2. 繪製數量文字 (e.g. /20pcs)
-                            page.insert_text(
-                                fitz.Point(x_pcs, y_pcs + 12),
-                                box_info["display_qty"],
-                                fontsize=14,
-                                fontname="hebo",
-                                color=(0, 0, 0)
-                            )
+                            # 2. 繪製數量文字 (5P 標籤已合併至同一行，故在此跳過)
+                            if not is_5p:
+                                page.insert_text(
+                                    fitz.Point(x_pcs, y_pcs + 12),
+                                    box_info["display_qty"],
+                                    fontsize=14,
+                                    fontname="hebo",
+                                    color=(0, 0, 0)
+                                )
                             
                             po_counters[po_clean] += 1
                             matched_count += 1
