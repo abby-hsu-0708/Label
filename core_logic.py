@@ -196,17 +196,15 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                         if idx < len(boxes):
                             box_info = boxes[idx]
                             
-                            # 確定繪製的座標：箱號與數量對齊下方 QTY: 起點 (53 開頭為 205.0 / 450.0)
-                            # 若為 5P 開頭的 PO，為了避開中間小字並對齊下方的 2026 年份，將 X 座標平移 (左欄 260.0，右欄 510.0)
-                            if po_clean.startswith("5P") or po_clean.startswith("5p"):
-                                x_aa = 260.0 if col == 0 else 510.0
-                            else:
-                                x_aa = 205.0 if col == 0 else 450.0
+                            # 確定繪製的座標：箱號與數量對齊下方 QTY: 起點 (205.0 / 450.0)
+                            x_aa = 205.0 if col == 0 else 450.0
                             x_pcs = x_aa
                             x_p = 67.3 if col == 0 else 312.1
                             
-                            y_aa = Y_AA[row]
-                            y_pcs = Y_PCS[row]
+                            # 若為 5P 開頭的 PO，為了避開中間小字 (如 AB251CDB25) 且防止水平壓到右欄標籤，將 Y 座標垂直下移 24.0pt
+                            is_5p = po_clean.startswith("5P") or po_clean.startswith("5p")
+                            y_aa = Y_AA[row] + 24.0 if is_5p else Y_AA[row]
+                            y_pcs = Y_PCS[row] + 24.0 if is_5p else Y_PCS[row]
                             y_p = Y_P[row]
                             
                             # 1. 繪製箱號文字 (AA 或完整箱號如 AC0134)
