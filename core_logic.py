@@ -196,12 +196,12 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                         if idx < len(boxes):
                             box_info = boxes[idx]
                             
-                            # 若為 5P 開頭的 PO，為了避開中間小字與下方 QTY 數量，
-                            # 將 X 座標平移 (左欄 175.0, 右欄 420.0)，且 Y 座標下移 20.0pt，並將箱號與數量合併為單行印出
+                            # 若為 5P 開頭的 PO，為了避開左側長品名文字與下方條碼，
+                            # 將 X 座標平移 (左欄 195.0, 右欄 440.0)，且 Y 座標下移 30.0pt，並將箱號與數量合併為單行印出
                             is_5p = po_clean.startswith("5P") or po_clean.startswith("5p")
                             if is_5p:
-                                x_aa = 175.0 if col == 0 else 420.0
-                                y_aa = Y_AA[row] + 20.0
+                                x_aa = 195.0 if col == 0 else 440.0
+                                y_aa = Y_AA[row] + 30.0
                             else:
                                 x_aa = 205.0 if col == 0 else 450.0
                                 y_aa = Y_AA[row]
