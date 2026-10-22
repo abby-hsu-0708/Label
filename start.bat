@@ -1,8 +1,8 @@
 @echo off
-title MISUMI Label Tool Starter
+title Shipping Label Tool Starter
 cd /d "%~dp0"
 echo ==========================================
-echo Starting MISUMI Label Tool...
+echo Starting Shipping Label Tool...
 echo ==========================================
 echo.
 
@@ -13,7 +13,7 @@ if not exist .venv (
     exit /b
 )
 
-.\.venv\Scripts\python.exe main.py
+.\.venv\Scripts\streamlit.exe run streamlit_app.py
 
 if errorlevel 1 (
     echo.

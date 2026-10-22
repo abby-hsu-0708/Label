@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧出貨標籤自動套印系統</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="aurora aurora-1"></div>
+    <div class="aurora aurora-2"></div>
+
+    <div class="container">
+        <!-- 頂部標頭 -->
+        <header class="custom-header">
+            <div class="custom-logo">
+                <span class="custom-badge">PRO</span>
+                <h1>智慧出貨標籤自動套印系統</h1>
+            </div>
+            <p class="custom-subtitle">一鍵解析裝箱明細、自動計算出貨篩選區間、精確套印箱號與數量。</p>
+        </header>
+
+        <!-- 左右雙欄對稱佈局 -->
+        <div class="two-col-grid">
+            <!-- 左欄：預覽標籤箱數 -->
+            <div class="glass-card">
+                <div class="card-title-bar">
+                    <h3>📋 預覽標籤箱數 (選填)</h3>
+                    <p class="card-caption">前往下載標籤前，先丟 Packing List 計算各 PO 需求箱數。</p>
+                </div>
+                <div class="compact-dropzone" id="preview-dropzone">
+                    <input type="file" id="preview-file-input" accept=".xls,.xlsx" class="hidden-input">
+                    <div class="dropzone-inner">
+                        <span class="dropzone-icon">📊</span>
+                        <div class="dropzone-text">
+                            <span class="primary-text" id="preview-filename">點擊或拖曳 Packing List Excel</span>
+                            <span class="secondary-text">支援 .xls, .xlsx</span>
+                        </div>
+                        <button type="button" class="mini-upload-btn" onclick="document.getElementById('preview-file-input').click()">選擇檔案</button>
+                    </div>
+                </div>
+                <div id="preview-status" class="status-msg"></div>
+            </div>
+
+            <!-- 右欄：單一入口智慧套印 -->
+            <div class="glass-card">
+                <div class="card-title-bar">
+                    <h3>⚡ 智慧標籤自動套印 (核心)</h3>
+                    <p class="card-caption">同時拖曳 Packing List 與客戶 Label PDF，自動分類套印。</p>
+                </div>
+                <div class="compact-dropzone" id="unified-dropzone">
+                    <input type="file" id="unified-file-input" accept=".pdf,.xls,.xlsx" multiple class="hidden-input">
+                    <div class="dropzone-inner">
+                        <span class="dropzone-icon">⚡</span>
+                        <div class="dropzone-text">
+                            <span class="primary-text">將 Label PDF 與 Excel 同時拖入此處</span>
+                            <span class="secondary-text">自動辨識分類</span>
+                        </div>
+                        <button type="button" class="mini-upload-btn" onclick="document.getElementById('unified-file-input').click()">瀏覽檔案</button>
+                    </div>
+                </div>
+
+                <!-- 檔案識別狀態徽章 -->
+                <div class="file-badges-row">
+                    <div class="file-badge waiting" id="pdf-badge">
+                        <span class="badge-icon">📄</span>
+                        <div class="badge-info">
+                            <div class="badge-title" id="pdf-badge-title">客戶 Label PDF</div>
+                            <div class="badge-desc" id="pdf-badge-desc">等待上傳中 (.pdf)</div>
+                        </div>
+                    </div>
+                    <div class="file-badge waiting" id="excel-badge">
+                        <span class="badge-icon">📊</span>
+                        <div class="badge-info">
+                            <div class="badge-title" id="excel-badge-title">倉庫 Packing List</div>
+                            <div class="badge-desc" id="excel-badge-desc">等待上傳中 (.xls, .xlsx)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-row">
+                    <label class="auto-run-label">
+                        <input type="checkbox" id="auto-run-cb" checked>
+                        <span>⚡ 檔案辨識齊全後自動觸發標示</span>
+                    </label>
+                    <button id="manual-run-btn" class="glow-btn" style="display:none;">🚀 開始自動對應並標示</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案 A：客戶出貨平台一鍵填表小幫手 (解析 Excel 後動態展開) -->
+        <div id="plan-a-section" class="plan-a-container" style="display: none;">
+            <div class="plan-a-header">
+                <div class="plan-a-title-row">
+                    <span class="plan-a-icon">⚡</span>
+                    <div>
+                        <h3 class="plan-a-title">方案 A：客戶出貨平台一鍵自動填表小幫手</h3>
+                        <p class="plan-a-desc">免手動切換編輯、免逐筆填寫！一鍵自動完成日期篩選、填寫各 PO 箱數與全選。</p>
+                    </div>
+                </div>
+                <span class="pill-tag">免安裝任何軟體</span>
+            </div>
+            <div class="plan-a-notice">
+                📌 <b>出貨日計算規則</b>：依公司固定<b>週五出貨</b>（遇假日提前），本次篩選截止日自動計算至<b>下次出貨日前一天</b>。
+            </div>
+
+            <!-- 日期微調與書籤按鈕 -->
+            <div class="date-pickers-row">
+                <div class="date-field">
+                    <label>📅 供應商出貨日 (起始日)</label>
+                    <input type="date" id="date-start">
+                </div>
+                <div class="date-field">
+                    <label>📅 篩選截止日 (下次出貨日前一天)</label>
+                    <input type="date" id="date-end">
+                </div>
+            </div>
+
+            <div class="bookmarklet-box">
+                <div class="bookmarklet-title">🚀 選擇執行方式 (兩種管道皆可)：</div>
+                <div class="bookmarklet-actions">
+                    <a id="bookmarklet-link" href="#" class="bookmarklet-btn">
+                        ⭐ 拖曳此按鈕至書籤列 (客戶平台自動填表)
+                    </a>
+                    <span class="bookmarklet-tip">👈 <b>滑鼠拖曳上方按鈕</b> 到 Chrome/Edge 書籤列，登入出貨平台後點一下即刻全自動填寫！</span>
+                </div>
+            </div>
+
+            <!-- 可折疊 Console 腳本代碼 -->
+            <details class="console-details">
+                <summary>💻 或直接在瀏覽器 F12 主控台 (Console) 一鍵貼上執行 (點擊展開代碼)</summary>
+                <div class="code-wrapper">
+                    <p class="code-caption">在客戶出貨管理頁面按 F12 鍵 ➡️ 點擊 Console (主控台) ➡️ 貼上下方代碼並按 Enter 即可：</p>
+                    <div class="code-box-rel">
+                        <button id="copy-code-btn" class="copy-btn">📋 複製代碼</button>
+                        <pre><code id="js-code-display"></code></pre>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- 各 PO 標籤需求箱數統計表 -->
+        <div id="po-table-section" class="table-section" style="display: none;">
+            <div class="section-title">
+                <h3>📊 各 PO 標籤需求箱數統計表</h3>
+                <span id="po-count-tag" class="count-tag">已解析 0 組 PO</span>
+            </div>
+            <div class="table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 170px;">PO 號碼</th>
+                            <th style="width: 150px;">Product NO</th>
+                            <th>Description</th>
+                            <th style="width: 110px; text-align: right;">需求箱數</th>
+                            <th style="width: 120px; text-align: right;">總出貨件數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="po-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 成果展示區 -->
+        <div id="result-section" class="glass-panel" style="display: none;">
+            <div class="success-header">
+                <div class="success-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" style="width:24px;height:24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                </div>
+                <div>
+                    <h2>PDF 標籤自動套印成功！</h2>
+                    <p>所有裝箱明細與 PDF 條碼 PO 號碼皆已自動配對標記完成。</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">PDF 總頁數</span>
+                    <span class="stat-value" id="stat-pages">0 頁</span>
+                </div>
+                <div class="stat-card highlight">
+                    <span class="stat-label">成功匹配標籤</span>
+                    <span class="stat-value" id="stat-matched">0 個</span>
+                </div>
+                <div class="stat-card" id="stat-missing-card">
+                    <span class="stat-label">缺少標籤 (Excel剩餘)</span>
+                    <span class="stat-value" id="stat-missing">0 個</span>
+                </div>
+                <div class="stat-card" id="stat-unmatched-card">
+                    <span class="stat-label">多餘標籤 (PDF多出)</span>
+                    <span class="stat-value" id="stat-unmatched">0 個</span>
+                </div>
+            </div>
+
+            <div id="warning-box" class="warning-box" style="display: none;">
+                <div class="warning-title" id="warning-title">⚠️ 配對警示訊息</div>
+                <ul class="warning-list" id="warning-list"></ul>
+            </div>
+
+            <div class="preview-section">
+                <h3>效果即時預覽 (第一頁)</h3>
+                <p class="preview-desc">您可以將滑鼠移至圖片上以放大查看套印細節</p>
+                <div class="preview-container">
+                    <div class="preview-box">
+                        <span class="preview-badge">原始 PDF 標籤</span>
+                        <div class="preview-img-wrapper">
+                            <img id="img-original" src="" alt="原始 PDF 預覽">
+                        </div>
+                    </div>
+                    <div class="preview-box">
+                        <span class="preview-badge success">自動標示後 PDF</span>
+                        <div class="preview-img-wrapper">
+                            <img id="img-labeled" src="" alt="標示後 PDF 預覽">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 25px;">
+                <a id="download-btn" href="#" class="glow-btn" style="text-decoration:none; display:flex; justify-content:center;">
+                    📥 下載標示後的 PDF 檔案
+                </a>
+            </div>
+        </div>
+
+        <!-- 處理中的 Loading 浮層 -->
+        <div id="loading-overlay" class="loading-overlay" style="display: none;">
+            <div class="loading-card">
+                <div class="spinner"></div>
+                <h3 id="loading-msg">正在進行 PO 號碼匹配與標籤套印中...</h3>
+                <p>請稍候，系統正在精確標記中</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

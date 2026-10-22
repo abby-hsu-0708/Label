@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Temp / Cache data
+temp_data/
+hot_folder/
+output_labels/
+scratch/
+*.pdf
+*.xls
+*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db

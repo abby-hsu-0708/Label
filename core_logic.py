@@ -27,8 +27,8 @@ def parse_excel(excel_path):
     # 箱號 Regex：例如 AA0001 或 AA0001 - AA0002
     box_pattern = re.compile(r"^([A-Z]+)(\d+)(?:\s*-\s*([A-Z]+)(\d+))?\s*$")
     
-    # PO Regex：14 位純數字，或含有連字號 (e.g. 53-260201-049789)，以及 5P 開頭的 12 位英數字 (e.g. 5P-002A8J-000208)
-    po_pattern = re.compile(r"^(?:53-?\d{6}-?\d{6}|5[Pp]-?[A-Za-z0-9]{6}-?[A-Za-z0-9]{6})$")
+    # PO Regex：支援所有 5 開頭、後接英數字、中間含可選連字號之 14 位 PO 號碼 (如 53, 5P, 5K 等)
+    po_pattern = re.compile(r"^5[A-Za-z0-9]-?[A-Za-z0-9]{6}-?[A-Za-z0-9]{6}$")
     
     # 數量 Regex：例如 @30pcs 或 @20pcs
     qty_pattern = re.compile(r"@(\d+)pcs")
@@ -183,8 +183,8 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                 # 提取此極窄區域內的文字以識別 PO 號碼
                 text = page.get_text("text", clip=po_rect)
                 
-                # 搜尋 PO 號碼格式：53-260201-049789 或 53260201049789，以及 5P 開頭格式
-                po_match = re.search(r"(?:53-?\d{6}-?\d{6})|(?:5[Pp]-?[A-Za-z0-9]{6}-?[A-Za-z0-9]{6})", text)
+                # 搜尋 PO 號碼格式：包含 53, 5P, 5K 等所有 5 開頭的 14 位 PO 格式
+                po_match = re.search(r"5[A-Za-z0-9]-?[A-Za-z0-9]{6}-?[A-Za-z0-9]{6}", text)
                 
                 if po_match:
                     po_clean = po_match.group(0).replace("-", "")
@@ -196,10 +196,10 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                         if idx < len(boxes):
                             box_info = boxes[idx]
                             
-                            # 若為 5P 開頭的 PO，為了避開左側長品名文字與下方條碼，
+                            # 若為非 53 開頭的特殊 PO (如 5P, 5K 等)，為了避開左側長品名文字與下方條碼，
                             # 將 X 座標平移 (左欄 195.0, 右欄 440.0)，且 Y 座標下移 30.0pt，並將箱號與數量合併為單行印出
-                            is_5p = po_clean.startswith("5P") or po_clean.startswith("5p")
-                            if is_5p:
+                            is_special_layout = not po_clean.startswith("53")
+                            if is_special_layout:
                                 x_aa = 195.0 if col == 0 else 440.0
                                 y_aa = Y_AA[row] + 30.0
                             else:
@@ -211,8 +211,8 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                             y_p = Y_P[row]
                             
                             # 1. 繪製箱號文字 (AA 或完整箱號如 AC0134)
-                            # 若為 5P 標籤，則將箱號與數量合併在同一行印出，防止重疊壓到下方 QTY
-                            if is_5p:
+                            # 若為特殊標籤，則將箱號與數量合併在同一行印出，防止重疊壓到下方 QTY
+                            if is_special_layout:
                                 text_to_draw = f"{box_info['display_box']}  {box_info['display_qty']}"
                             else:
                                 text_to_draw = box_info["display_box"]
@@ -225,8 +225,8 @@ def label_pdf(pdf_path, excel_data, output_pdf_path):
                                 color=(0, 0, 0)
                             )
                             
-                            # 2. 繪製數量文字 (5P 標籤已合併至同一行，故在此跳過)
-                            if not is_5p:
+                            # 2. 繪製數量文字 (特殊標籤已合併至同一行，故在此跳過)
+                            if not is_special_layout:
                                 page.insert_text(
                                     fitz.Point(x_pcs, y_pcs + 12),
                                     box_info["display_qty"],
@@ -301,52 +301,319 @@ def find_delivery_date(excel_path):
 
 def is_taiwan_holiday(date_obj):
     """
-    判斷指定日期是否為台灣國定假日。
-    包含 2026 年與 2027 年主要可能落在週四的假日。
+    判斷指定日期是否為台灣國定假日或週末。
+    包含 2025、2026、2027 年主要國定假日與彈性放假。
     """
+    # 週末即為休假日 (5: 週六, 6: 週日)
+    if date_obj.weekday() in (5, 6):
+        return True
+
     holidays = {
+        # 2025
+        "2025-01-01", # 元旦
+        "2025-01-27", "2025-01-28", "2025-01-29", "2025-01-30", "2025-01-31", # 春節
+        "2025-02-28", # 228
+        "2025-04-03", "2025-04-04", # 清明兒童連假
+        "2025-05-01", # 勞動節
+        "2025-05-30", "2025-05-31", # 端午節
+        "2025-10-06", # 中秋節
+        "2025-10-10", # 國慶日
+
         # 2026
-        "2026-01-01", # 元旦 (週四)
-        "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", # 春節 (2/19 週四)
-        "2026-02-27", "2026-02-28", # 228
-        "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", # 清明/兒童節 (4/2 週四)
+        "2026-01-01", "2026-01-02", # 元旦連假
+        "2026-02-15", "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", # 春節
+        "2026-02-27", "2026-02-28", # 228連假
+        "2026-04-02", "2026-04-03", "2026-04-04", "2026-04-05", "2026-04-06", # 清明/兒童節連假
+        "2026-05-01", # 勞動節 (週五)
         "2026-06-19", # 端午節 (週五)
         "2026-09-25", # 中秋節 (週五)
-        "2026-10-09", "2026-10-10", # 國慶日
-        
+        "2026-10-09", "2026-10-10", # 國慶日連假
+
         # 2027
-        "2027-01-01", # 元旦
-        "2027-02-05", "2027-02-06", "2027-02-07", "2027-02-08", "2027-02-09", "2027-02-10", "2027-02-11", "2027-02-12", # 春節 (2/11 週四)
-        "2027-02-28", # 228
+        "2027-01-01", # 元旦 (週五)
+        "2027-02-05", "2027-02-06", "2027-02-07", "2027-02-08", "2027-02-09", "2027-02-10", "2027-02-11", "2027-02-12", # 春節
+        "2027-02-26", "2027-02-27", "2027-02-28", # 228連假
         "2027-04-02", "2027-04-03", "2027-04-04", "2027-04-05", # 清明/兒童節
-        "2027-06-09", # 端午節 (週三)
-        "2027-09-15", # 中秋節 (週三)
-        "2027-10-08", "2027-10-10" # 國慶日
+        "2027-04-30", "2027-05-01", # 勞動節
+        "2027-06-09", # 端午節
+        "2027-09-15", # 中秋節
+        "2027-10-08", "2027-10-10" # 國慶日連假
     }
     date_str = date_obj.strftime("%Y-%m-%d")
     return date_str in holidays
 
 def calculate_date_range(start_date):
     """
-    根據出貨日計算篩選日期區間。
-    開始日期 = 出貨日
-    結束日期 = 下週四 (若遇台灣國定假日則改為週三)
+    根據出貨日計算客戶出貨系統的篩選日期區間。
+    業務規則：
+    1. 起始日 (Start Date)：當次出貨日。
+    2. 結束日 (End Date)：下次出貨日的前一天。
+       - 公司固定週五出貨；若遇假日則提前一天或兩天（例如週四、週三）。
+       - 下次出貨日預設為下週五，若休假則提前至最近工作日。
+       - 結束日 = 下次出貨日 - 1 天。
+       例如：10/16 (週五) 出貨，下次出貨為 10/23 (週五)，結束日即為 10/22 (週四)，區間為 10/16 ~ 10/22。
     """
     from datetime import timedelta
     if not start_date:
         return None, None
-    
-    # 計算下週四：(10 - 星期幾) % 7 如果為 0 則代表下週四
-    # 星期一=0, 星期二=1, ..., 星期日=6
-    # 我們使用公式： D + timedelta(days = 10 - D.weekday())
-    # 這樣一律可以找到 start_date 所在日曆週下星期的星期四
-    days_to_thursday = 10 - start_date.weekday()
-    next_thursday = start_date + timedelta(days=days_to_thursday)
-    
-    # 檢查是否為台灣假日，若是則改為週三 (前移 1 天)
-    if is_taiwan_holiday(next_thursday):
-        end_date = next_thursday - timedelta(days=1)
-    else:
-        end_date = next_thursday
-        
+
+    # 1. 計算下一個日曆週的週五 (weekday 4)
+    # 若 start_date 為週一(0) ~ 週日(6)，計算距離下週五的天數
+    days_to_next_friday = 4 - start_date.weekday()
+    if days_to_next_friday <= 0:
+        days_to_next_friday += 7
+
+    target_friday = start_date + timedelta(days=days_to_next_friday)
+
+    # 2. 判斷下週五是否遇台灣國定假日，若休假則持續往前推算至上班日
+    next_shipment = target_friday
+    while is_taiwan_holiday(next_shipment):
+        next_shipment -= timedelta(days=1)
+
+    # 3. 結束日為下次出貨日的前一天
+    end_date = next_shipment - timedelta(days=1)
+
+    # 若結束日小於起始日（極端罕見情況），保底設為起始日當天
+    if end_date < start_date:
+        end_date = start_date
+
     return start_date, end_date
+
+def generate_portal_bookmarklet(start_date, end_date, excel_data):
+    """
+    根據出貨日期區間與解析後的 PO 箱數資料，生成適用於客戶平台的「瀏覽器一鍵注入填表腳本 (Bookmarklet)」。
+    
+    回傳:
+        raw_js: 純 JavaScript 腳本字串 (可用於 F12 開發者工具 Console 貼上執行)
+        bookmarklet_url: 適用於瀏覽器書籤列的 javascript:... 協定 URL
+        summary: 統計資訊字典
+    """
+    import json
+    import urllib.parse
+    
+    # 格式化日期為 YYYY/MM/DD
+    start_str = start_date.strftime("%Y/%m/%d") if hasattr(start_date, "strftime") else str(start_date)
+    end_str = end_date.strftime("%Y/%m/%d") if hasattr(end_date, "strftime") else str(end_date)
+    
+    # 建立 PO -> 箱數 (需求標籤張數) 字典
+    # 同時收錄純英數與含連字號格式，確保 100% 匹配
+    po_map = {}
+    for po, boxes in excel_data.items():
+        box_count = len(boxes)
+        po_clean = str(po).replace("-", "").strip()
+        po_map[po_clean] = box_count
+        
+        # 若為標準 14 碼格式，額外建立含破折號版本
+        if len(po_clean) == 14:
+            dashed_po = f"{po_clean[:2]}-{po_clean[2:8]}-{po_clean[8:]}"
+            po_map[dashed_po] = box_count
+
+    po_map_json = json.dumps(po_map, ensure_ascii=False)
+
+    # 純原生 JavaScript 注入代碼
+    raw_js = f"""(function() {{
+    const startDate = "{start_str}";
+    const endDate = "{end_str}";
+    const poMap = {po_map_json};
+
+    function showHUD(msg, type = "info") {{
+        let hud = document.getElementById("shipping-helper-hud");
+        if (!hud) {{
+            hud = document.createElement("div");
+            hud.id = "shipping-helper-hud";
+            hud.style.cssText = "position:fixed;top:24px;right:24px;z-index:999999;background:#111827;color:#f3f4f6;padding:18px 22px;border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,0.6);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;border:1.5px solid #374151;max-width:420px;line-height:1.6;transition:all 0.3s ease;";
+            document.body.appendChild(hud);
+        }}
+        const colors = {{ info: "#3b82f6", success: "#10b981", warn: "#f59e0b", error: "#ef4444" }};
+        const titleColors = {{ info: "#60a5fa", success: "#34d399", warn: "#fbbf24", error: "#f87171" }};
+        hud.style.borderColor = colors[type] || colors.info;
+        hud.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:6px;">
+                <strong style="color:${{titleColors[type] || '#fff'}};font-size:15px;display:flex;align-items:center;gap:6px;">
+                    🏷️ 出貨標籤自動填表小幫手
+                </strong>
+                <span onclick="this.parentElement.parentElement.remove()" style="cursor:pointer;color:#9ca3af;font-size:18px;line-height:1;padding:2px 6px;">&times;</span>
+            </div>
+            <div style="color:#e5e7eb;">${{msg}}</div>
+        `;
+        if (type === "success") {{
+            setTimeout(() => {{
+                if (hud) {{
+                    hud.style.opacity = '0';
+                    setTimeout(() => hud.remove(), 500);
+                }}
+            }}, 12000);
+        }}
+    }}
+
+    function triggerInputEvents(el, val) {{
+        el.focus();
+        el.value = val;
+        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+        el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+        el.dispatchEvent(new Event('blur', {{ bubbles: true }}));
+    }}
+
+    function sleep(ms) {{
+        return new Promise(r => setTimeout(r, ms));
+    }}
+
+    async function runAutoFill() {{
+        showHUD(`🚀 <b>啟動自動填表流程...</b><br>📅 出貨日篩選區間：<b>${{startDate}}</b> ~ <b>${{endDate}}</b>`);
+        await sleep(400);
+
+        // 1. 尋找「出貨」->「出貨管理」頁籤 (若不在當前頁)
+        const shipmentLink = Array.from(document.querySelectorAll('a, span, div')).find(el => el.textContent.trim() === '出貨管理');
+        if (shipmentLink && !window.location.href.includes('shipment')) {{
+            showHUD("正在切換至『出貨管理』頁面...");
+            shipmentLink.click();
+            await sleep(1500);
+        }}
+
+        // 2. 尋找「供應商出貨日」起訖輸入框
+        showHUD("📅 正在自動填入出貨日篩選區間...");
+        const allElements = Array.from(document.querySelectorAll('span, div, td, label'));
+        const dateHeader = allElements.find(el => {{
+            const t = el.textContent || "";
+            return t.includes("供應商") && t.includes("出貨日") && !t.includes("訂單") && !t.includes("三住");
+        }});
+
+        let dateInputs = [];
+        if (dateHeader) {{
+            const container = dateHeader.closest('tr') || dateHeader.closest('div') || dateHeader.parentElement;
+            if (container) {{
+                dateInputs = Array.from(container.querySelectorAll('input[type="text"], input:not([type])'));
+            }}
+        }}
+
+        // Fallback 策略：若找不到文字標籤，找所有帶有日期相關特徵的 input
+        if (dateInputs.length < 2) {{
+            dateInputs = Array.from(document.querySelectorAll('input[type="text"], input:not([type])')).filter(i => {{
+                return (i.placeholder && (i.placeholder.includes('年') || i.placeholder.includes('YYYY') || i.placeholder.includes('/'))) || 
+                       (i.value && (i.value.includes('/') || i.value.includes('-')));
+            }});
+        }}
+
+        if (dateInputs.length >= 2) {{
+            triggerInputEvents(dateInputs[0], startDate);
+            triggerInputEvents(dateInputs[1], endDate);
+        }} else {{
+            console.warn("未精確鎖定日期輸入框，嘗試直接進入列表比對");
+        }}
+
+        // 3. 點擊「搜索」按鈕
+        showHUD("🔍 點擊『搜索』查詢訂單清單中...");
+        const searchBtn = Array.from(document.querySelectorAll('button, input[type="button"], a')).find(el => {{
+            const t = (el.textContent || el.value || "").trim();
+            return t === "搜索" || t === "搜尋";
+        }});
+        if (searchBtn) {{
+            searchBtn.click();
+            await sleep(2200);
+        }}
+
+        // 4. 切換出貨訊息編輯模式 (點擊開始)
+        showHUD("⚙️ 啟動『出貨訊息編輯模式』...");
+        const editStartBtn = Array.from(document.querySelectorAll('button, input[type="button"]')).find(el => {{
+            const t = (el.textContent || el.value || "").trim();
+            return t === "開始" || t.includes("開始編輯");
+        }});
+
+        if (editStartBtn) {{
+            editStartBtn.click();
+            await sleep(800);
+        }}
+
+        // 5. 點選「訂單標籤列印張數」頁籤
+        showHUD("📑 切換至『訂單標籤列印張數』分頁...");
+        const labelTab = Array.from(document.querySelectorAll('div, span, a, button, li')).find(el => {{
+            return (el.textContent || "").includes("訂單標籤列印張數");
+        }});
+        if (labelTab) {{
+            labelTab.click();
+            await sleep(700);
+        }}
+
+        // 6. 遍歷表格每一列，比對 PO 號碼並填入箱數
+        showHUD("📦 正在逐列比對 PO 號碼並填寫標籤箱數...");
+        let matchedRows = 0;
+        const rows = Array.from(document.querySelectorAll('table tbody tr, table tr'));
+
+        rows.forEach(row => {{
+            const rowText = (row.textContent || "").replace(/[^0-9A-Za-z]/g, "");
+            for (const [poKey, qty] of Object.entries(poMap)) {{
+                const cleanKey = poKey.replace(/[^0-9A-Za-z]/g, "");
+                if (rowText.includes(cleanKey)) {{
+                    const inputs = Array.from(row.querySelectorAll('input[type="text"], input[type="number"], input:not([type])')).filter(i => !i.disabled && !i.readOnly);
+                    if (inputs.length > 0) {{
+                        // 取最後一個或最符合數量的輸入框
+                        const targetInput = inputs[inputs.length - 1];
+                        triggerInputEvents(targetInput, qty);
+                        targetInput.style.backgroundColor = "#dcfce7";
+                        targetInput.style.border = "2px solid #16a34a";
+                        targetInput.style.fontWeight = "bold";
+                        matchedRows++;
+                        break;
+                    }}
+                }}
+            }}
+        }});
+
+        // 7. 保存編輯設定：點擊「完成」
+        showHUD("💾 正在儲存設定 (點擊編輯模式『完成』)...");
+        const editFinishBtn = Array.from(document.querySelectorAll('button, input[type="button"]')).find(el => {{
+            const t = (el.textContent || el.value || "").trim();
+            return t === "完成" || t.includes("完成編輯");
+        }});
+
+        if (editFinishBtn) {{
+            editFinishBtn.click();
+            await sleep(1000);
+        }}
+
+        // 8. 全選訂單 Checkbox
+        showHUD("☑️ 正在勾選所有訂單項目...");
+        const selectAllCb = document.querySelector('table th input[type="checkbox"], thead input[type="checkbox"], th input[type="checkbox"]');
+        if (selectAllCb) {{
+            if (!selectAllCb.checked) {{
+                selectAllCb.click();
+                selectAllCb.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            }}
+        }} else {{
+            // Fallback: 逐一勾選每行的 checkbox
+            const itemCheckboxes = Array.from(document.querySelectorAll('table tbody input[type="checkbox"], td input[type="checkbox"]'));
+            itemCheckboxes.forEach(cb => {{
+                if (!cb.checked) {{
+                    cb.click();
+                    cb.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                }}
+            }});
+        }}
+
+        await sleep(500);
+
+        // 9. 顯示最終完成通知
+        showHUD(`
+            🎉 <b>自動填表與勾選全部完成！</b><br>
+            📅 篩選出貨日：<b>${{startDate}}</b> ~ <b>${{endDate}}</b><br>
+            📦 成功填入標籤箱數：<b>${{matchedRows}}</b> 筆訂單<br>
+            ☑️ 所有訂單項目已自動全選。<br><br>
+            👉 <b>請確認畫面無誤後，直接點擊【印製表單】下載標籤 PDF！</b>
+        `, "success");
+    }}
+
+    runAutoFill();
+}})();"""
+
+    # 將 JavaScript 進行安全壓縮與 URL 編碼，製成 Bookmarklet
+    minified_js = " ".join([line.strip() for line in raw_js.splitlines() if line.strip() and not line.strip().startswith("//")])
+    bookmarklet_url = f"javascript:{urllib.parse.quote(minified_js)}"
+
+    summary = {
+        "start_date": start_str,
+        "end_date": end_str,
+        "po_count": len(po_map) // 2 if any("-" in k for k in po_map) else len(po_map),
+        "po_map": po_map
+    }
+
+    return raw_js, bookmarklet_url, summary
